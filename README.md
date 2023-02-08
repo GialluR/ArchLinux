@@ -1,3 +1,3 @@
 # ArchLinux
 
-PAcchetti installazione archlinux
+Pacchetti installazione archlinux
