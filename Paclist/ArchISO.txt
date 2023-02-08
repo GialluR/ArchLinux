@@ -28,6 +28,7 @@ exfatprogs
 f2fs-tools
 fatresize
 fsarchiver
+git
 gnu-netcat
 gpart
 gpm
@@ -119,3 +120,4 @@ wvdial
 xfsprogs
 xl2tpd
 zsh
+zsh-completions
