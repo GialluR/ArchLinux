@@ -1,0 +1,7 @@
+kitty
+firefox
+flatpak
+mpv
+neofetch
+vlc
+
