@@ -1,0 +1,198 @@
+
+## Aggiornamento mirrorlist per regione, protocollo e velocità
+reflector --country France,Germany,Italy,Worldwide --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+
+## Modifica pacman.conf - abilitare Color e diminuire ParallelDownloads a 3
+nano /etc/pacman.conf
+
+## Sincronizza
+pacman -Syy
+
+## Partizioni
+gdisk /dev/sda
+
+1:	+512M	ef00	BOOT
+2:	TUTTO	8300	ROOT
+
+## Formatta
+mkfs.vfat -n BOOT /dev/sda1
+mkfs.btrfs -L ROOT /dev/sda2
+
+## Mount e Subvolume
+mount /dev/sda2 /mnt
+cd /mnt
+btrfs su cr @
+btrfs su cr @cache
+btrfs su cr @home
+btrfs su cr @snapshots
+btrfs su cr @log
+cd
+umount /mnt
+mount -o compress=zstd:1,noatime,subvol=@ /dev/sda2 /mnt
+mkdir -p /mnt/{boot/efi,home,.snapshots,var/{cache,log}}
+mount -o compress=zstd:1,noatime,subvol=@cache /dev/sda2 /mnt/var/cache
+mount -o compress=zstd:1,noatime,subvol=@home /dev/sda2 /mnt/home
+mount -o compress=zstd:1,noatime,subvol=@log /dev/sda2 /mnt/var/log
+mount -o compress=zstd:1,noatime,subvol=@snapshots /dev/sda2 /mnt/.snapshots
+mount /dev/sda1 /mnt/boot/efi
+lsblk
+####################################
+##											##
+##NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS	##
+##loop0    7:0    0 710.1M  1 loop 					##
+##sda      8:0    0    50G  0 disk 					##
+##├─sda1   8:1    0   512M  0 part /mnt/boot/efi		##
+##└─sda2   8:2    0  49.5G  0 part /mnt/.snapshots	##
+##                                /mnt/var/log				##
+##                                 /mnt/home				##
+##                                /mnt/var/cache				##
+##                                 /mnt						##
+##sr0     11:0    1 824.3M  0 rom 					##
+##											##
+####################################
+
+## Install and chroot
+pacstrap -K /mnt base base-devel git linux linux-firmware nano micro openssh reflector rsync
+genfstab -U /mnt >> /mnt/etc/fstab
+arch-chroot /mnt
+
+##Sets Up
+ln -sf /usr/share/zoneinfo/Europe/Rome /etc/localtime
+hwclock --systohc --utc
+reflector --country France,Germany,Italy,Worldwide --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+pacman -Syy
+micro /etc/locale.gen 
+## Uncomment
+#it_IT.UTF-8 UTF-8
+##
+locale-gen
+echo LANG=it_IT.UTF-8 > /etc/locale.conf
+echo arch > /etc/hostname
+micro /etc/hosts
+## Add
+#127.0.0.1 	localhost
+#::1 		localhost
+#127.0.1.1 	arch.localdomain arch
+##
+
+
+## Installa pacchetti da git
+mkdir GitPackageList
+cd GitPackageList
+git clone https://github.com/GialluR/ArchLinux.git
+cd ArchLinux/Paclist
+# Modifica pacman.conf - abilitare Color, diminuire ParallelDownloads a 3, abilitare multilib
+micro /etc/pacman.conf
+pacman -Syy
+pacman -S --needed - < ArchISO.txt
+pacman -S --needed - < Drivers.txt
+pacman -S --needed - < Net.txt
+pacman -S --needed - < Fonts.txt
+pacman -S --needed - < Media.txt
+pacman -S --needed - < Xorg.txt
+pacman -S --needed - < Apps.txt
+
+## Utenti  e zsh shell
+passwd root
+useradd -m -G sys,log,network,floppy,scanner,power,rfkill,users,video,storage,optical,lp,audio,wheel,adm -s /bin/zsh giallu
+passwd giallu
+export VISUAL=micro
+export EDITOR=micro
+visudo /etc/sudoers
+
+
+## Grub
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchLinux
+grub-mkconfig -o /boot/grub/grub.cfg
+micro /etc/mkinitcpio.conf
+# BINARIES=(btrfs)
+mkinitcpio -p linux
+
+## Systemctl
+systemctl enable avahi-daemon
+#systemctl enable fstrim.timer
+systemctl enable NetworkManager
+systemctl enable reflector.timer
+systemctl enable sshd
+systemctl enable upower
+
+
+## FINISH
+exit
+umount -a
+reboot
+
+## YAY
+git clone https://aur.archlinux.org/yay
+cd yay
+makepkg -si
+cd
+yay
+rm -fr yay
+
+## SNAPPER
+yay -S snapper-support #versione che abilita snap-pac e grub-btrfs
+# Fix "creating btrfs subvolume .snapshots failed since it already exists"
+sudo -s
+cd /
+umount /.snapshots
+rm -r /.snapshots 
+snapper -c root create-config /
+btrfs subvol list /
+
+####################################
+##											##
+##ID 256 gen 142 top level 5 path @				##
+##ID 257 gen 138 top level 5 path @cache			##
+##ID 258 gen 141 top level 5 path @home			##
+##ID 259 gen 10 top level 5 path @snapshots		##
+##ID 260 gen 142 top level 5 path @log			##
+##ID 261 gen 26 top level 256 path var/lib/portables	##
+##ID 262 gen 27 top level 256 path var/lib/machines	##
+##ID 263 gen 142 top level 256 path .snapshots		##
+##											##
+####################################
+
+#snapper create-config crea un subvolume .snapshots che dobbiamo cancellare
+btrfs subvolume delete /.snapshots
+mkdir /.snapshots
+mount -a
+
+btrfs subvol get-default /
+#Mostra ID 5 (FS_TREE) come default, dobbiamo cambiarlo con ID 256 path @
+btrfs subvol set-def 256 /
+btrfs subvol get-default / #check
+micro /etc/snapper/configs/root
+###########################
+##ALLOW_GROUPS="wheel"			##
+##TIMELINE_CREATE="no"			##
+##TIMELINE_LIMIT_HOURLY="1"		##
+##TIMELINE_LIMIT_DAILY="2"		##
+##TIMELINE_LIMIT_WEEKLY="3"		##
+##TIMELINE_LIMIT_MONTHLY="6"		##
+##TIMELINE_LIMIT_YEARLY="1"		##
+###########################
+chown -R :wheel /.snapshots
+snapper -c root create -d "***System Installed***"
+exit
+
+
+##Z-Ram
+yay -S zram-generator
+sudo micro /etc/systemd/zram-generator.conf
+##[zram0]
+##zram-size = ram / 2
+sudo systemctl daemon-reload
+sudo systemctl start /dev/zram0
+reboot 
+yay -S duf
+duf
+reboot
+
+##Poerlevel10k
+yay -S zsh-theme-powerlevel10k-git
+yay -S ttf-meslo-nerd-font-powerlevel10k powerline-fonts awesome-terminal-fonts
+echo 'source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+exec zsh
+
+
