@@ -1,0 +1,38 @@
+##ROLLBACK
+
+sudo -s
+snapper ls
+#controllare il numero corretto di snapshots a cui tornare
+mount -t btrfs -o subvol=/ /dev/sda2 /mnt
+cd /mnt
+ls
+cd @
+rm -fr *
+cd ..
+sync
+cd ..
+cd /mnt
+mv @ @.empty
+btrfs subvolume snapshot /mnt/@snapshots/NUMERO/snapshot /mnt/@
+umount /mnt
+reboot
+
+sudo -s
+btrfs subvol lis /
+btrfs subvol get-def /
+# il default  e' @.empty e va cambiato
+btrfs subvol set-def NUMERO /
+
+#Camcellare il subvolume @.empty
+mount -t btrfs -o subvol=/ /dev/sda2 /mnt
+ls /mnt
+btrfs subvolume delete /mnt/@.empty
+umount /mnt
+btrfs subvol lis /
+#@.empty non c'e' piu'
+
+#Cancellare snapshots inutili
+snapper ls
+snapper delete NUMERO NUMERO NUMERO
+snapper ls
+
