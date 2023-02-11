@@ -79,6 +79,7 @@ open-vm-tools
 openconnect
 openssh
 openvpn
+pacman-contrib
 partclone
 parted
 partimage
