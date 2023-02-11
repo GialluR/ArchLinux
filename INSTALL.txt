@@ -1,4 +1,4 @@
-
+PROVA
 ## Aggiornamento mirrorlist per regione, protocollo e velocità
 reflector --country France,Germany,Italy,Worldwide --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 
