@@ -42,7 +42,6 @@ irssi
 iw
 iwd
 jfsutils
-kitty-terminfo
 less
 lftp
 libfido2
@@ -50,7 +49,6 @@ libusb-compat
 linux
 linux-atm
 linux-firmware
-linux-firmware-marvell
 livecd-sounds
 lsscsi
 lvm2

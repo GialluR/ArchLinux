@@ -1,7 +1,9 @@
-kitty
 firefox
 flatpak
-mpv
+deluge
+gparted
+kitty
+kitty-terminfo
+meld
 neofetch
 vlc
-
