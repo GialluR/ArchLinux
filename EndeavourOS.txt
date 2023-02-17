@@ -1,0 +1,60 @@
+## ENDEAVOUR OS KDE INSTALLATION ##
+#
+# Aggiorna mirrors arch
+#
+# Pacchetti utente
+#	micro
+#	zsh
+#	zsh-completion
+#	snapper
+#	snap-pac
+#	os-prober
+#	git
+#
+# Modifica sudo nano /etc/calamares/modules/mount.conf
+#Btrfs Subvolume
+#	/
+#	/@
+#	/home
+#	/@home
+#	/.snapshots
+#	/@snapshots
+#	/var
+#	/@var
+#
+# Installa sistema
+# Online
+# Grub Bootloader
+# Btrfs no swap
+#
+# Reboot
+#
+# Configurare snapper
+# umount /.snapshots
+# rm -rf /.snapshots
+# snapper -c root create-config /
+# btrfs subvol lis /
+# btrfs subvol delete /.snapshots
+# mkdir /.snapshots
+# mount -a
+# btrfs subvol get-def /
+# btrfs subvol set-def 256 /
+# pacman -S grub-btrfs
+# systemctl enable --now grub-btrfsd.service
+# micro /etc/snapper/configs/root
+#	aggiungere wheel ai gruppi
+#	modificare tempi
+#
+#chown -R :wheel /.snapshots/
+#systemctl enable --now snapper-timeline.timer
+#systemctl enable --now snapper-cleanup.timer
+#
+# ZSH
+# chsh -l
+# chsh -s /usr/bin/zsh
+#Installare powerlevel10k
+#snapper -c root create -d "***System Ready***"
+
+
+
+
