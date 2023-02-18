@@ -2,8 +2,6 @@ firefox
 flatpak
 deluge
 gparted
-kitty
-kitty-terminfo
 meld
 neofetch
 vlc
